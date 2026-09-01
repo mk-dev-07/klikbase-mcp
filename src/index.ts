@@ -24,7 +24,7 @@ const app = createMcpExpressApp({
 	host: "0.0.0.0",
 
 	allowedHosts:
-		env.nodeEnv === "production" ? ["mcp.klikbase.com", "klikbase-mcp-server.onrender.com"] : undefined,
+		env.nodeEnv === "production" ? ["mcp.klikbase.com", "klikbase-mcp.onrender.com"] : undefined,
 });
 
 // ============================================================
