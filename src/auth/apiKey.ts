@@ -1,8 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
 
 export type ApiKeyAuthContext = {
-	apiKey: string;
+	token: string;
+
+	// Kept for backward compatibility with existing code.
+	apiKey?: string;
+
 	authorizationHeader: string;
+
+	authType: "API_KEY" | "OAUTH";
 };
 
 export class AuthenticationError extends Error {
@@ -12,6 +18,13 @@ export class AuthenticationError extends Error {
 	}
 }
 
+/**
+ * Extract either:
+ *
+ * Bearer kb_live_...
+ * OR
+ * Bearer kb_oauth_...
+ */
 export const extractApiKey = (authorizationHeader?: string | null): ApiKeyAuthContext => {
 	if (!authorizationHeader) {
 		throw new AuthenticationError("Missing Authorization header.");
@@ -20,34 +33,53 @@ export const extractApiKey = (authorizationHeader?: string | null): ApiKeyAuthCo
 	const [scheme, token, ...extra] = authorizationHeader.trim().split(/\s+/);
 
 	if (scheme?.toLowerCase() !== "bearer" || !token || extra.length > 0) {
-		throw new AuthenticationError("Invalid Authorization header. Expected: Bearer kb_live_...");
+		throw new AuthenticationError("Invalid Authorization header.");
 	}
 
-	if (!token.startsWith("kb_live_")) {
-		throw new AuthenticationError("Invalid Klikbase API key format.");
+	// ============================================================
+	// API KEY
+	// ============================================================
+
+	if (token.startsWith("kb_live_")) {
+		return {
+			token,
+			apiKey: token,
+			authorizationHeader: `Bearer ${token}`,
+			authType: "API_KEY",
+		};
 	}
 
-	return {
-		apiKey: token,
-		authorizationHeader: `Bearer ${token}`,
-	};
+	// ============================================================
+	// OAUTH ACCESS TOKEN
+	// ============================================================
+
+	if (token.startsWith("kb_oauth_")) {
+		return {
+			token,
+			authorizationHeader: `Bearer ${token}`,
+			authType: "OAUTH",
+		};
+	}
+
+	throw new AuthenticationError("Unsupported Klikbase authentication token.");
 };
 
 /**
- * Express request type used by MCP routes.
+ * Express request used by MCP routes.
  */
 export interface AuthenticatedMcpRequest extends Request {
 	klikbaseAuth?: ApiKeyAuthContext;
 }
 
 /**
- * MCP API-key middleware.
+ * MCP authentication middleware.
  *
- * IMPORTANT:
- * This checks the credential format only.
+ * This middleware checks the token FORMAT only.
  *
- * Actual API-key authentication is performed by
- * the Klikbase backend when tools call its MCP APIs.
+ * Actual API-key / OAuth-token validation happens
+ * in the Klikbase backend when a tool calls:
+ *
+ * /api/mcp/*
  */
 export const requireKlikbaseApiKey = (req: AuthenticatedMcpRequest, res: Response, next: NextFunction) => {
 	try {
@@ -56,6 +88,17 @@ export const requireKlikbaseApiKey = (req: AuthenticatedMcpRequest, res: Respons
 		return next();
 	} catch (error) {
 		if (error instanceof AuthenticationError) {
+			/**
+			 * Tell OAuth-aware MCP clients where
+			 * authorization metadata can be discovered.
+			 */
+			const publicUrl = (process.env.MCP_PUBLIC_URL || "http://localhost:3001").replace(/\/+$/, "");
+
+			res.setHeader(
+				"WWW-Authenticate",
+				`Bearer resource_metadata="${publicUrl}/.well-known/oauth-protected-resource"`,
+			);
+
 			return res.status(401).json({
 				error: "Unauthorized",
 				message: error.message,

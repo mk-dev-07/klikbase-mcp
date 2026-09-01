@@ -4,11 +4,8 @@ import type { ApiKeyAuthContext } from "../auth/apiKey.js";
 import { normalizeMcpError } from "../utils/mcpError.js";
 
 import { searchClients, searchClientsInputSchema } from "./searchClients.js";
-
 import { searchTeamLeaders, searchTeamLeadersInputSchema } from "./searchTeamLeaders.js";
-
 import { searchAssistants, searchAssistantsInputSchema } from "./searchAssistants.js";
-
 import { createTask, createTaskInputSchema } from "./createTask.js";
 
 export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
@@ -160,7 +157,11 @@ export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
 			title: "Create Klikbase Task",
 
 			description:
-				"Create a new task in Klikbase. Only the task title is required. Client, IA, Team Leader, project, task list, due date, priority, description, and labels are optional. Search for users first when the user provides names instead of Klikbase IDs.",
+				"Create a new task in Klikbase. Only the task title is required. " +
+				"Client, IA, Team Leader, project, task list, due date, priority, description, and labels are optional. " +
+				"Search for users first when the user provides names instead of Klikbase IDs. " +
+				"IMPORTANT: After this tool successfully creates a task, you MUST include the exact public task URL returned by the tool in your final response to the user. " +
+				"Present it as a clickable 'View task' link. Never omit the task URL.",
 
 			inputSchema: createTaskInputSchema,
 		},
@@ -169,16 +170,35 @@ export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
 			try {
 				const result = await createTask(input, auth);
 
+				const taskUrl = result?.task?.url;
+
+				const text = taskUrl
+					? [
+							result?.message ?? "Task created successfully.",
+							"",
+							`PUBLIC_TASK_URL: ${taskUrl}`,
+							"",
+							"FINAL_RESPONSE_REQUIREMENT: You must include PUBLIC_TASK_URL in your final response as a clickable 'View task' link.",
+						].join("\n")
+					: (result?.message ?? "Task created successfully.");
+
 				return {
 					content: [
 						{
 							type: "text" as const,
-
-							text: result?.message ?? JSON.stringify(result, null, 2),
+							text,
 						},
 					],
 
-					structuredContent: result,
+					structuredContent: {
+						...result,
+
+						taskUrl,
+
+						responseInstruction: taskUrl
+							? "Always include taskUrl in the final response as a clickable 'View task' link."
+							: undefined,
+					},
 				};
 			} catch (error) {
 				const normalized = normalizeMcpError(error);

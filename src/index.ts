@@ -40,6 +40,28 @@ app.get("/health", (_req, res) => {
 });
 
 // ============================================================
+// OAUTH PROTECTED RESOURCE METADATA
+// ============================================================
+
+app.get("/.well-known/oauth-protected-resource", (_req, res) => {
+	const mcpPublicUrl = (process.env.MCP_PUBLIC_URL || `http://localhost:${env.port}`).replace(/\/+$/, "");
+
+	const oauthIssuer = (process.env.OAUTH_ISSUER || "http://localhost:5000").replace(/\/+$/, "");
+
+	return res.status(200).json({
+		resource: `${mcpPublicUrl}/mcp`,
+
+		authorization_servers: [oauthIssuer],
+
+		scopes_supported: ["profile", "users:read", "tasks:create"],
+
+		bearer_methods_supported: ["header"],
+
+		resource_name: "Klikbase MCP Server",
+	});
+});
+
+// ============================================================
 // MCP
 // ============================================================
 
