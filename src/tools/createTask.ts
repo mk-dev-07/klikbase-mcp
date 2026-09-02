@@ -15,13 +15,11 @@ export const createTaskInputSchema = z.object({
 		.optional()
 		.describe("Optional task description containing additional details or instructions."),
 
-	clientUserId: z
-		.number()
-		.int()
-		.positive()
+	clients: z
+		.array(z.number().int().positive())
 		.optional()
 		.describe(
-			"Optional Klikbase User ID of the client associated with this task. Use search_clients first when only a client name is known.",
+			"Optional array of Klikbase Client User IDs associated with this task. Use search_clients first when client names are provided.",
 		),
 
 	assistantUserIds: z
@@ -78,9 +76,9 @@ export const createTask = async (input: CreateTaskInput, auth: ApiKeyAuthContext
 				}
 			: {}),
 
-		...(validatedInput.clientUserId !== undefined
+		...(validatedInput.clients !== undefined
 			? {
-					clientUserId: validatedInput.clientUserId,
+					clients: validatedInput.clients,
 				}
 			: {}),
 

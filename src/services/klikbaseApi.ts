@@ -35,7 +35,7 @@ export const createTask = async (
 	payload: {
 		title: string;
 		description?: string;
-		clientUserId?: number;
+		clients?: number[];
 		assistantUserIds?: number[];
 		teamLeaderUserIds?: number[];
 		priority?: string;
