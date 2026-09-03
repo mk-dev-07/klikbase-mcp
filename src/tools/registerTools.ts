@@ -158,7 +158,7 @@ export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
 
 			description:
 				"Create a new task in Klikbase. Only the task title is required. " +
-				"Clients, IAs, Team Leaders, project, task list, due date, priority, description, and labels are optional. " +
+				"Clients, IAs, Team Leaders, project, task list, due date, description, and labels are optional. " +
 				"When the user provides client names instead of IDs, use search_clients first and pass all selected client IDs in the clients array. " +
 				"Search for IAs and Team Leaders before creating the task when names are provided. " +
 				"IMPORTANT: After this tool successfully creates a task, you MUST include the exact public task URL returned by the tool in your final response to the user. " +

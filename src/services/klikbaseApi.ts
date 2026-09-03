@@ -38,7 +38,6 @@ export const createTask = async (
 		clients?: number[];
 		assistantUserIds?: number[];
 		teamLeaderUserIds?: number[];
-		priority?: string;
 		dueDate?: string;
 		taskListId?: number;
 		projectId?: number;

@@ -36,11 +36,6 @@ export const createTaskInputSchema = z.object({
 			"Optional array of Klikbase User IDs for Team Leaders assigned to the task. Use search_team_leaders first when only names are known.",
 		),
 
-	priority: z
-		.enum(["LOW", "MEDIUM", "HIGH"])
-		.optional()
-		.describe("Optional task priority. Defaults to MEDIUM when omitted."),
-
 	dueDate: z.string().optional().describe("Optional due date as an ISO 8601 date-time string."),
 
 	taskListId: z
@@ -91,12 +86,6 @@ export const createTask = async (input: CreateTaskInput, auth: ApiKeyAuthContext
 		...(validatedInput.teamLeaderUserIds !== undefined
 			? {
 					teamLeaderUserIds: validatedInput.teamLeaderUserIds,
-				}
-			: {}),
-
-		...(validatedInput.priority !== undefined
-			? {
-					priority: validatedInput.priority,
 				}
 			: {}),
 
