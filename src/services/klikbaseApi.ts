@@ -52,3 +52,33 @@ export const createTask = async (
 
 	return response.data;
 };
+
+export const getTaskUpdates = async (auth: KlikbaseAuth, taskId: number, since?: string) => {
+	const response = await api.get(`/api/mcp/tasks/${taskId}/updates`, {
+		params: since
+			? {
+					since,
+				}
+			: undefined,
+
+		headers: {
+			Authorization: auth.authorizationHeader,
+		},
+	});
+
+	return response.data;
+};
+
+export const searchTasks = async (auth: KlikbaseAuth, query: string) => {
+	const response = await api.get("/api/mcp/tasks/search", {
+		params: {
+			query,
+		},
+
+		headers: {
+			Authorization: auth.authorizationHeader,
+		},
+	});
+
+	return response.data;
+};

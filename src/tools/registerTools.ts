@@ -7,6 +7,8 @@ import { searchClients, searchClientsInputSchema } from "./searchClients.js";
 import { searchTeamLeaders, searchTeamLeadersInputSchema } from "./searchTeamLeaders.js";
 import { searchAssistants, searchAssistantsInputSchema } from "./searchAssistants.js";
 import { createTask, createTaskInputSchema } from "./createTask.js";
+import { getTaskUpdates, getTaskUpdatesInputSchema } from "./getTaskUpdates.js";
+import { searchTasks, searchTasksInputSchema } from "./searchTasks.js";
 
 export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
 	// ============================================================
@@ -200,6 +202,100 @@ export const registerTools = (server: McpServer, auth: ApiKeyAuthContext) => {
 							? "Always include taskUrl in the final response as a clickable 'View task' link."
 							: undefined,
 					},
+				};
+			} catch (error) {
+				const normalized = normalizeMcpError(error);
+
+				return {
+					isError: true,
+
+					content: [
+						{
+							type: "text" as const,
+							text: normalized.message,
+						},
+					],
+				};
+			}
+		},
+	);
+
+	server.registerTool(
+		"search_tasks",
+		{
+			title: "Search Klikbase Tasks",
+
+			description:
+				"Search Klikbase tasks by task name, partial name, keywords in any order, or link ID. " +
+				"Use this when the user refers to a task without knowing its exact ID, including vague references to a previously created task. " +
+				"The user does not need to provide the full task title or exact word order. " +
+				"Use the returned task ID with get_task_updates to retrieve the task's current state and activity history.",
+
+			inputSchema: searchTasksInputSchema,
+		},
+
+		async (input) => {
+			try {
+				const result = await searchTasks(input, auth);
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify(result, null, 2),
+						},
+					],
+
+					structuredContent: result,
+				};
+			} catch (error) {
+				const normalized = normalizeMcpError(error);
+
+				return {
+					isError: true,
+
+					content: [
+						{
+							type: "text" as const,
+							text: normalized.message,
+						},
+					],
+				};
+			}
+		},
+	);
+
+	// ============================================================
+	// GET TASK UPDATES
+	// ============================================================
+
+	server.registerTool(
+		"get_task_updates",
+		{
+			title: "Get Klikbase Task Updates",
+
+			description:
+				"Get the current state and recent activity for a specific Klikbase task using its task ID. " +
+				"Use this after search_tasks when the task ID is not already known. " +
+				"Use this when the user asks for an update, progress, comments, changes, due-date information, or what happened with a task. " +
+				"The result can include title changes, description changes, due-date changes, assignee changes, task-list movements, comments/task logs, and whether the due date has been reached.",
+
+			inputSchema: getTaskUpdatesInputSchema,
+		},
+
+		async (input) => {
+			try {
+				const result = await getTaskUpdates(input, auth);
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify(result, null, 2),
+						},
+					],
+
+					structuredContent: result,
 				};
 			} catch (error) {
 				const normalized = normalizeMcpError(error);
